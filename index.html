@@ -364,7 +364,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
   border: 1px solid #3b82f6; border-radius: 16px;
   padding: 16px 18px; margin-bottom: 14px; color: #fff;
 }
-
 </style>
 </head>
 <body>
@@ -419,10 +418,10 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
     <div class="card">
       <div class="section-label">🔒 부모 화면 PIN</div>
       <div style="font-size:12px;color:var(--slate);margin-bottom:10px">4자리 숫자 · 미설정 시 1234</div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;flex-direction:column;gap:8px">
         <input type="password" id="pin-input-new" placeholder="새 PIN (4자리)" inputmode="numeric" maxlength="4"
-          style="flex:1;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);font-family:inherit;font-size:14px;outline:none"/>
-        <button class="btn btn-primary" style="padding:11px 18px;font-size:13px" onclick="savePin()">저장</button>
+          style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);font-family:inherit;font-size:14px;outline:none"/>
+        <button class="btn btn-primary" style="width:100%;padding:11px 18px;font-size:13px" onclick="savePin()">PIN 번호 저장하기</button>
       </div>
       <div id="pin-save-msg" style="display:none;font-size:12px;color:var(--green);margin-top:6px;font-weight:600">✅ PIN이 변경됐어요</div>
     </div>
@@ -430,12 +429,16 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
     <div class="card">
       <div class="section-label">🤖 Gemini API 키</div>
       <div style="font-size:12px;color:var(--slate);margin-bottom:8px">힌트·오답 분석 기능에 사용 (없어도 문제 생성 가능)</div>
-      <input type="password" id="gemini-key" placeholder="AIza..."
-        style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);font-family:inherit;font-size:14px;outline:none"
-        oninput="onGemKeyInput(this)"/>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input type="password" id="gemini-key" placeholder="AIza..."
+          style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);font-family:inherit;font-size:14px;outline:none"
+          oninput="onGemKeyInput(this)"/>
+        <button class="btn btn-amber" id="test-gemini-btn" style="width:100%;padding:11px 18px;font-size:13px" onclick="testAndSaveGemini()">저장 및 연결 테스트</button>
+      </div>
       <div id="gem-key-hint" style="font-size:12px;color:var(--slate);margin-top:6px">
         없어도 됩니다 · <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--blue)">무료 발급 →</a>
       </div>
+      <div id="gem-test-msg" style="display:none;font-size:12px;margin-top:6px;font-weight:600"></div>
     </div>
 
     <div class="card">
@@ -480,7 +483,7 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
       </div>
     </div>
 
-    <button class="save-btn" id="save-btn" onclick="saveConfig()">💾 설정 저장 → 아이 화면에 반영</button>
+    <button class="save-btn" id="save-btn" onclick="saveConfig()">💾 전체 설정 저장 → 아이 화면에 반영</button>
   </div>
 
   <div id="tab-records" class="tab-content">
@@ -535,7 +538,7 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
         <div style="font-size:24px;font-weight:700;color:#1e293b;margin-bottom:16px">오늘의 문제</div>
         <div id="ready-mix-badge" style="display:none;background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1.5px solid #bfdbfe;border-radius:14px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#1d4ed8;font-weight:600"></div>
         <div style="background:#fafafa;border-radius:16px;padding:16px 18px;margin-bottom:20px;text-align:left" id="ready-info"></div>
-                <div id="mission-card" class="mission-card" style="display:none;text-align:left">
+        <div id="mission-card" class="mission-card" style="display:none;text-align:left">
           <div style="font-size:11px;font-weight:700;color:#60a5fa;letter-spacing:1px;margin-bottom:6px">🎯 오늘의 도전 미션</div>
           <div id="mission-text" style="font-size:14px;line-height:1.65;color:#e2e8f0"></div>
         </div>
@@ -998,11 +1001,58 @@ function setStyle(s) { STATE.style = s; renderStyle(); }
 function renderStyle(){ ["vertical","horizontal"].forEach(s=>{ document.getElementById("style-"+s).className="chip"+(STATE.style===s?" active":""); }); }
 function onGemKeyInput(el) { STATE.gemKey=el.value; document.getElementById("gem-key-hint").style.display=el.value?"none":"block"; }
 
+// 3. API 저장 및 테스트 전용 함수
+async function testAndSaveGemini() {
+  const keyInput = document.getElementById("gemini-key").value.trim();
+  const msgEl = document.getElementById("gem-test-msg");
+  const btn = document.getElementById("test-gemini-btn");
+
+  if (!keyInput) {
+    msgEl.style.color = "var(--red)";
+    msgEl.textContent = "❌ API 키를 입력해주세요.";
+    msgEl.style.display = "block";
+    return;
+  }
+
+  // 기기에 바로 저장
+  STATE.gemKey = keyInput;
+  localStorage.setItem("gemini_key", keyInput);
+
+  btn.textContent = "테스트 중...";
+  btn.disabled = true;
+  msgEl.style.display = "none";
+
+  try {
+    // 가장 가벼운 프롬프트로 통신 테스트 시도
+    await callGemini(keyInput, "1+1은? 숫자로만 대답해줘.");
+    
+    // 성공 메시지 출력
+    msgEl.style.color = "var(--green)";
+    msgEl.textContent = "✅ 연결 성공! 정상적으로 기기에 저장되었습니다.";
+    msgEl.style.display = "block";
+
+    // 정상 동작이 확인되면 아이 화면에도 즉시 동기화
+    Cloud.get("config").then(cfg => {
+      const newCfg = cfg || {};
+      newCfg.geminiKey = keyInput;
+      Cloud.set("config", newCfg);
+    });
+    
+  } catch(e) {
+    // 실패 원인 명시
+    msgEl.style.color = "var(--red)";
+    msgEl.textContent = "❌ 연결 실패: " + e.message;
+    msgEl.style.display = "block";
+  }
+  
+  btn.textContent = "저장 및 연결 테스트";
+  btn.disabled = false;
+}
+
 async function saveConfig() {
   if (!STATE.selUnits.length) { showToast("단원을 하나 이상 선택해주세요"); return; }
   STATE.count = parseInt(document.getElementById("count-slider").value);
   
-  // API 키를 기기에도 저장하고 STATE에도 확실히 업데이트
   STATE.gemKey = document.getElementById("gemini-key").value.trim();
   localStorage.setItem("gemini_key", STATE.gemKey);
   
@@ -1013,14 +1063,14 @@ async function saveConfig() {
       grades: STATE.selGrades, unitIds: STATE.selUnits,
       difficulty: STATE.difficulty, style: STATE.style,
       count: STATE.count, ts: Date.now(),
-      geminiKey: STATE.gemKey // ✨ Firebase 저장 데이터에 API 키 추가
+      geminiKey: STATE.gemKey
     });
     btn.textContent = "✅ 아이 화면에 저장됨!";
     btn.classList.add("saved");
-    setTimeout(() => { btn.textContent="💾 설정 저장 → 아이 화면에 반영"; btn.classList.remove("saved"); btn.disabled=false; }, 2500);
+    setTimeout(() => { btn.textContent="💾 전체 설정 저장 → 아이 화면에 반영"; btn.classList.remove("saved"); btn.disabled=false; }, 2500);
   } catch(e) {
     showToast("저장 실패: " + e.message);
-    btn.textContent = "💾 설정 저장 → 아이 화면에 반영"; btn.disabled = false;
+    btn.textContent = "💾 전체 설정 저장 → 아이 화면에 반영"; btn.disabled = false;
   }
 }
 
@@ -1076,7 +1126,8 @@ async function doAnalysis() {
   const res=document.getElementById("analysis-result"); res.style.display="none";
   try {
     const summary=records.slice(0,20).map(r=>r.date+": "+(r.unitNames||["혼합"]).join("·")+" — "+r.correct+"/"+r.total+"문제, 오답: "+(r.wrongExprs||[]).slice(0,4).join(", ")).join("\n");
-    const prompt="초등학생 수학 학습 기록입니다:\n\n"+summary+"\n\n한국어로 다음을 분석해주세요:\n1. 잘하는 부분\n2. 오답이 집중된 유형과 원인\n3. 다음 학습 추천\n4. 부모님께 한마디\n\n친절하고 구체적으로, 3~4문단으로 작성해주세요.";
+    // 적극적 수정: 상황 중심의 자연스러운 분석 유도
+    const prompt="다음은 방금 진행한 수학 학습 기록입니다:\n\n"+summary+"\n\n한국어로 다음을 분석해주세요:\n1. 잘하는 부분\n2. 오답이 집중된 유형과 원인\n3. 다음 학습 추천\n4. 부모님께 한마디\n\n친절하고 구체적으로, 3~4문단으로 작성해주세요.";
     const text=await callGemini(STATE.gemKey,prompt);
     res.style.cssText="display:block;background:#f8fafc;border-radius:12px;padding:16px;font-size:14px;line-height:1.85;color:#334155;border-left:3px solid var(--blue);white-space:pre-wrap";
     res.textContent=text;
@@ -1139,7 +1190,6 @@ function renderReady() {
 
 // ── 오늘의 도전 미션 ──────────────────────────────────
 async function loadMission() {
-  // Firebase에 저장된 키를 우선으로 찾고, 없으면 기기에 저장된 키를 찾음
   const gemKey = (childConfig && childConfig.geminiKey) ? childConfig.geminiKey : (localStorage.getItem("gemini_key") || "");
   const card   = document.getElementById("mission-card");
   const text   = document.getElementById("mission-text");
@@ -1154,7 +1204,8 @@ async function loadMission() {
       ? recentRecords.map(r=>r.correct+"/"+r.total+"문제 ("+Math.round(r.correct/r.total*100)+"%)").join(", ")
       : "처음 시작";
     const unitNames = [...new Set(UNITS.filter(u=>childConfig?.unitIds?.includes(u.id)).map(u=>u.name))].join(", ");
-    const prompt = "초등학생이 수학 연산을 연습하고 있어요. 최근 기록: "+summary+". 오늘 풀 단원: "+unitNames+".\n\n오늘 도전할 재미있는 미션을 1가지만 만들어주세요. 예: '오늘은 틀리지 말고 다 맞혀보자!', '어제보다 10% 더 잘해보자!' 같은 식으로. 1~2문장, 반말로 친근하게, 이모지 포함. 미션 내용만 출력하세요.";
+    // 적극적 수정: 명확한 상황 설명과 자연스러운 미션 생성 유도
+    const prompt = "현재 수학 연산 문제를 집중해서 풀고 있는 상황입니다. 최근 기록: "+summary+". 오늘 풀 단원: "+unitNames+".\n\n오늘 도전할 재미있는 미션을 1가지만 만들어주세요. 예: '오늘은 틀리지 말고 다 맞혀보자!', '어제보다 10% 더 잘해보자!' 같은 식으로. 1~2문장, 반말로 친근하게, 이모지 포함. 미션 내용만 출력하세요.";
     text.textContent = await callGemini(gemKey, prompt);
   } catch(e) {
     card.style.display = "none";
@@ -1260,10 +1311,8 @@ const WRONG_MSGS = [
 
 async function showCharFeedback(ok, problem) {
   const area    = document.getElementById("char-feedback");
-  // Firebase에 저장된 키를 우선으로 찾고, 없으면 기기에 저장된 키를 찾음
   const gemKey  = (childConfig && childConfig.geminiKey) ? childConfig.geminiKey : (localStorage.getItem("gemini_key") || "");
 
-  // Gemini 없으면 기본 메시지
   if (!gemKey) {
     const msgs = ok ? CORRECT_MSGS : WRONG_MSGS;
     area.textContent = msgs[Math.floor(Math.random()*msgs.length)];
@@ -1271,39 +1320,37 @@ async function showCharFeedback(ok, problem) {
     return;
   }
 
-  // 기본 메시지 먼저 보여주고 Gemini로 교체
   area.textContent = ok ? CORRECT_MSGS[0] : WRONG_MSGS[0];
   area.style.display = "block";
 
   try {
     const streak = answers.filter(a=>a.ok).length;
+    // 적극적 수정: 현장감을 살려 칭찬/응원 유도
     const prompt = ok
-      ? "초등학생이 '"+problem.expr+"="+problem.ans+"' 문제를 맞혔어요! 연속 "+streak+"문제 정답. 짧고 신나는 칭찬 한 마디만 해줘 (1문장, 반말, 이모지 포함). 칭찬만 출력해."
-      : "초등학생이 '"+problem.expr+"' 문제를 틀렸어요 (정답: "+problem.ans+"). 상처 주지 않게 짧게 응원 한 마디만 해줘 (1문장, 반말, 이모지 포함). 응원만 출력해.";
+      ? "방금 '"+problem.expr+"="+problem.ans+"' 문제를 정답으로 맞혔습니다! 연속 "+streak+"문제 정답. 짧고 신나는 칭찬 한 마디만 해줘 (1문장, 반말, 이모지 포함). 칭찬만 출력해."
+      : "방금 '"+problem.expr+"' 문제를 아쉽게 틀렸습니다 (정답: "+problem.ans+"). 상처 주지 않게 짧게 응원 한 마디만 해줘 (1문장, 반말, 이모지 포함). 응원만 출력해.";
     const msg = await callGemini(gemKey, prompt);
     area.textContent = msg.trim();
   } catch(e) { /* 기본 메시지 유지 */ }
 }
 
 async function getHint() {
-  // Firebase에 저장된 키를 우선으로 찾고, 없으면 기기에 저장된 키를 찾음
   const gemKey = (childConfig && childConfig.geminiKey) ? childConfig.geminiKey : (localStorage.getItem("gemini_key") || "");
   if (!gemKey) return;
   const area = document.getElementById("hint-area");
   area.innerHTML = '<div class="hint-box">힌트 가져오는 중... 🤔</div>';
   const p = problems[curIdx];
   try {
-    const prompt = "초등학생이 \""+p.expr+" = ?\" 문제를 풀고 있어요. 답을 알려주지 말고 생각할 수 있게 힌트만 1~2문장으로 친절하게 주세요.";
+    // 적극적 수정: 힌트 제공 의도를 명확하게 전달
+    const prompt = "현재 \""+p.expr+" = ?\" 문제를 풀기 위해 고민하고 있습니다. 답을 직접 알려주지 말고, 스스로 생각할 수 있도록 힌트만 1~2문장으로 친절하게 주세요.";
     const h = await callGemini(gemKey, prompt);
     area.innerHTML = '<div class="hint-box">💡 '+h+'</div>';
   } catch(e) {
-    // 소극적/적극적 수정: 오류가 발생했을 때 구체적인 원인을 화면에 표시
     area.innerHTML = '<div class="hint-box">오류: API 키 또는 네트워크를 확인해주세요 (' + e.message + ')</div>';
   }
 }
 
 function renderHintBtn() {
-  // Firebase에 저장된 키를 우선으로 찾고, 없으면 기기에 저장된 키를 찾음
   const gemKey = (childConfig && childConfig.geminiKey) ? childConfig.geminiKey : (localStorage.getItem("gemini_key") || "");
   const area   = document.getElementById("hint-area");
   if (!gemKey || area.innerHTML) return;
