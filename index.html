@@ -4,10 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>수학 문제지 생성기</title>
-<!-- Pretendard 폰트 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
 
-<!-- Firebase compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
@@ -371,9 +369,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════
-     SCREEN: LANDING
-══════════════════════════════════════════════════ -->
 <div id="screen-landing" class="screen active">
   <div class="landing-grid"></div>
   <div class="landing-glow" style="width:400px;height:400px;top:10%;left:20%;background:radial-gradient(circle,rgba(59,130,246,.18) 0%,transparent 70%)"></div>
@@ -404,9 +399,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     SCREEN: PARENT
-══════════════════════════════════════════════════ -->
 <div id="screen-parent" class="screen">
   <div class="parent-header">
     <div class="parent-header-left">
@@ -422,10 +414,8 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
     <button class="tab-btn" onclick="switchTab('records')">📊 학습 기록</button>
   </div>
 
-  <!-- 설정 탭 -->
   <div id="tab-settings" class="tab-content active">
 
-    <!-- PIN 설정 -->
     <div class="card">
       <div class="section-label">🔒 부모 화면 PIN</div>
       <div style="font-size:12px;color:var(--slate);margin-bottom:10px">4자리 숫자 · 미설정 시 1234</div>
@@ -437,7 +427,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
       <div id="pin-save-msg" style="display:none;font-size:12px;color:var(--green);margin-top:6px;font-weight:600">✅ PIN이 변경됐어요</div>
     </div>
 
-    <!-- Gemini 키 -->
     <div class="card">
       <div class="section-label">🤖 Gemini API 키</div>
       <div style="font-size:12px;color:var(--slate);margin-bottom:8px">힌트·오답 분석 기능에 사용 (없어도 문제 생성 가능)</div>
@@ -449,14 +438,12 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
       </div>
     </div>
 
-    <!-- 학년 선택 -->
     <div class="card">
       <div class="section-label">학년 선택</div>
       <div style="font-size:12px;color:var(--slate);margin-bottom:10px">복수 선택 가능 — 여러 학년 Mix 출제</div>
       <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px" id="grade-chips"></div>
     </div>
 
-    <!-- 단원 선택 -->
     <div class="card">
       <div class="section-label">단원 선택</div>
       <div style="font-size:12px;color:var(--slate);margin-bottom:12px">복수 선택 → 섞어서 출제 (Mix 모드)</div>
@@ -466,7 +453,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
       </div>
     </div>
 
-    <!-- 난이도 -->
     <div class="card">
       <div class="section-label">난이도</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
@@ -476,7 +462,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
       </div>
     </div>
 
-    <!-- 형식 -->
     <div class="card">
       <div class="section-label">문제 형식</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -485,7 +470,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
       </div>
     </div>
 
-    <!-- 문제 수 -->
     <div class="card">
       <div class="section-label">문제 수: <span id="count-label">30</span>문제</div>
       <input type="range" min="10" max="100" step="5" value="30" id="count-slider"
@@ -499,7 +483,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
     <button class="save-btn" id="save-btn" onclick="saveConfig()">💾 설정 저장 → 아이 화면에 반영</button>
   </div>
 
-  <!-- 기록 탭 -->
   <div id="tab-records" class="tab-content">
     <div id="records-empty" class="card" style="text-align:center;padding:48px 20px;color:var(--slate)">
       <div style="font-size:48px;margin-bottom:12px">📭</div>
@@ -509,7 +492,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
     <div id="records-content" style="display:none;flex-direction:column;gap:14px">
       <div class="stat-grid" id="stat-grid"></div>
 
-      <!-- Gemini 분석 -->
       <div class="card" id="ai-analysis-box">
         <div style="display:flex;align-items:center;margin-bottom:12px">
           <span style="font-weight:800;font-size:15px">🤖 AI 학습 분석</span>
@@ -524,12 +506,8 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     SCREEN: CHILD
-══════════════════════════════════════════════════ -->
 <div id="screen-child" class="screen">
 
-  <!-- PHASE: LOADING -->
   <div id="child-loading" style="display:flex;align-items:center;justify-content:center;min-height:100vh">
     <div style="text-align:center;color:#92400e">
       <div style="font-size:48px;animation:spin 1s linear infinite">⏳</div>
@@ -537,7 +515,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
     </div>
   </div>
 
-  <!-- PHASE: NO CONFIG -->
   <div id="child-noconfig" style="display:none;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center">
     <div>
       <div style="font-size:72px;margin-bottom:16px">😴</div>
@@ -547,7 +524,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
     </div>
   </div>
 
-  <!-- PHASE: READY -->
   <div id="child-ready" style="display:none">
     <div class="child-header">
       <button class="btn btn-ghost" style="border:none;font-size:20px;color:#92400e;background:none;padding:4px 8px" onclick="goScreenDirect('landing')">←</button>
@@ -568,10 +544,8 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
     </div>
   </div>
 
-  <!-- PHASE: SOLVING -->
   <div id="child-solving" style="display:none">
     <div style="max-width:420px;margin:0 auto;padding:16px 20px 80px">
-      <!-- 진행 -->
       <div style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;font-size:13px;color:#92400e;margin-bottom:5px;font-weight:700">
           <span id="prog-text">1 / 20</span>
@@ -580,10 +554,8 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
         <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
       </div>
 
-      <!-- 캐릭터 피드백 -->
       <div id="char-feedback" style="display:none" class="char-bubble"></div>
 
-      <!-- 문제 카드 -->
       <div class="child-card" id="problem-card" style="text-align:center;margin-bottom:14px;transition:box-shadow .25s">
         <div id="feedback-emoji" style="font-size:40px;margin-bottom:8px;display:none"></div>
         <div id="problem-display"></div>
@@ -592,7 +564,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
           oninput="onAnsInput()"/>
       </div>
 
-      <!-- 힌트 -->
       <div id="hint-area" style="margin-bottom:12px"></div>
 
       <button class="btn btn-amber" id="submit-btn" style="width:100%;padding:18px;font-size:20px;border-radius:18px;font-family:'Pretendard',sans-serif" onclick="submitAnswer()">
@@ -601,7 +572,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
     </div>
   </div>
 
-  <!-- PHASE: RESULT -->
   <div id="child-result" style="display:none">
     <div style="max-width:420px;margin:0 auto;padding:24px 16px 80px">
       <div class="child-card" style="text-align:center;margin-bottom:14px">
@@ -625,7 +595,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
 </div>
 
 
-<!-- PIN 오버레이 -->
 <div id="pin-overlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(15,23,42,0.92);backdrop-filter:blur(8px);align-items:center;justify-content:center">
   <div style="background:#1e293b;border-radius:24px;padding:36px 32px;width:90%;max-width:340px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.5)">
     <div style="font-size:44px;margin-bottom:12px">🔒</div>
@@ -635,7 +604,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
       <div class="pin-dot"></div><div class="pin-dot"></div>
       <div class="pin-dot"></div><div class="pin-dot"></div>
     </div>
-    <!-- 숫자 키패드 -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto">
       <button class="pin-key" onclick="pinInput(1)">1</button>
       <button class="pin-key" onclick="pinInput(2)">2</button>
@@ -659,7 +627,6 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
   </div>
 </div>
 
-<!-- 토스트 -->
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1034,7 +1001,11 @@ function onGemKeyInput(el) { STATE.gemKey=el.value; document.getElementById("gem
 async function saveConfig() {
   if (!STATE.selUnits.length) { showToast("단원을 하나 이상 선택해주세요"); return; }
   STATE.count = parseInt(document.getElementById("count-slider").value);
+  
+  // API 키를 기기에도 저장하고 STATE에도 확실히 업데이트
+  STATE.gemKey = document.getElementById("gemini-key").value.trim();
   localStorage.setItem("gemini_key", STATE.gemKey);
+  
   const btn = document.getElementById("save-btn");
   btn.textContent = "저장 중..."; btn.disabled = true;
   try {
@@ -1042,6 +1013,7 @@ async function saveConfig() {
       grades: STATE.selGrades, unitIds: STATE.selUnits,
       difficulty: STATE.difficulty, style: STATE.style,
       count: STATE.count, ts: Date.now(),
+      geminiKey: STATE.gemKey // ✨ Firebase 저장 데이터에 API 키 추가
     });
     btn.textContent = "✅ 아이 화면에 저장됨!";
     btn.classList.add("saved");
@@ -1167,7 +1139,8 @@ function renderReady() {
 
 // ── 오늘의 도전 미션 ──────────────────────────────────
 async function loadMission() {
-  const gemKey = localStorage.getItem("gemini_key") || "";
+  // Firebase에 저장된 키를 우선으로 찾고, 없으면 기기에 저장된 키를 찾음
+  const gemKey = (childConfig && childConfig.geminiKey) ? childConfig.geminiKey : (localStorage.getItem("gemini_key") || "");
   const card   = document.getElementById("mission-card");
   const text   = document.getElementById("mission-text");
   if (!gemKey) { card.style.display="none"; return; }
@@ -1287,7 +1260,8 @@ const WRONG_MSGS = [
 
 async function showCharFeedback(ok, problem) {
   const area    = document.getElementById("char-feedback");
-  const gemKey  = localStorage.getItem("gemini_key") || "";
+  // Firebase에 저장된 키를 우선으로 찾고, 없으면 기기에 저장된 키를 찾음
+  const gemKey  = (childConfig && childConfig.geminiKey) ? childConfig.geminiKey : (localStorage.getItem("gemini_key") || "");
 
   // Gemini 없으면 기본 메시지
   if (!gemKey) {
@@ -1312,7 +1286,8 @@ async function showCharFeedback(ok, problem) {
 }
 
 async function getHint() {
-  const gemKey = localStorage.getItem("gemini_key") || "";
+  // Firebase에 저장된 키를 우선으로 찾고, 없으면 기기에 저장된 키를 찾음
+  const gemKey = (childConfig && childConfig.geminiKey) ? childConfig.geminiKey : (localStorage.getItem("gemini_key") || "");
   if (!gemKey) return;
   const area = document.getElementById("hint-area");
   area.innerHTML = '<div class="hint-box">힌트 가져오는 중... 🤔</div>';
@@ -1322,12 +1297,14 @@ async function getHint() {
     const h = await callGemini(gemKey, prompt);
     area.innerHTML = '<div class="hint-box">💡 '+h+'</div>';
   } catch(e) {
-    area.innerHTML = '<div class="hint-box">힌트를 불러오지 못했어요 😅</div>';
+    // 소극적/적극적 수정: 오류가 발생했을 때 구체적인 원인을 화면에 표시
+    area.innerHTML = '<div class="hint-box">오류: API 키 또는 네트워크를 확인해주세요 (' + e.message + ')</div>';
   }
 }
 
 function renderHintBtn() {
-  const gemKey = localStorage.getItem("gemini_key") || "";
+  // Firebase에 저장된 키를 우선으로 찾고, 없으면 기기에 저장된 키를 찾음
+  const gemKey = (childConfig && childConfig.geminiKey) ? childConfig.geminiKey : (localStorage.getItem("gemini_key") || "");
   const area   = document.getElementById("hint-area");
   if (!gemKey || area.innerHTML) return;
   area.innerHTML = '<button class="btn" style="width:100%;padding:11px;border-radius:14px;background:#fefce8;border:2px solid #fde68a;color:#92400e;font-size:14px;font-weight:700;font-family:\'Pretendard\',sans-serif;margin-bottom:0" onclick="getHint()">💡 힌트 받기</button>';
