@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>수학 문제지 생성기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Gaegu:wght@400;700&family=Black+Han+Sans&display=swap" rel="stylesheet"/>
+
+<!-- Firebase CDN -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+
+  // ═══════════════════════════════════════════════════
+  //  🔥 Firebase 설정값
+  // ═══════════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyATYzOPx0Z0iCmsU7btvTpkvKs_1H9s7VI",
+    authDomain: "woorim-math-worksheet.firebaseapp.com",
+    databaseURL: "https://woorim-math-worksheet-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "woorim-math-worksheet",
+    storageBucket: "woorim-math-worksheet.firebasestorage.app",
+    messagingSenderId: "620330724565",
+    appId: "1:620330724565:web:768744704ac4b1546d865c"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  // 전역 Cloud 객체로 노출
+  window.Cloud = {
+    set: (path, val) => set(ref(db, path), val),
+    get: (path)      => get(ref(db, path)).then(s => s.exists() ? s.val() : null),
+    listen: (path, cb) => onValue(ref(db, path), s => cb(s.exists() ? s.val() : null)),
+  };
+  window._firebaseReady = true;
+  document.dispatchEvent(new Event("firebase-ready"));
+</script>
+
+<style>
+/* ── 전역 리셋 ───────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:   #0f172a;
+  --navy2:  #1e293b;
+  --blue:   #3b82f6;
+  --blue2:  #1d4ed8;
+  --amber:  #f59e0b;
+  --red:    #ef4444;
+  --green:  #10b981;
+  --slate:  #64748b;
+  --border: #e2e8f0;
+  --bg:     #f1f5f9;
+}
+body { font-family: 'Gowun Dodum', sans-serif; background: var(--bg); min-height: 100vh; }
+
+/* ── 화면 전환 ───────────────────────────────────── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+
+/* ── 공통 컴포넌트 ───────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 12px 20px; border-radius: 12px; border: none;
+  font-family: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: transform .12s, box-shadow .12s;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  color: #fff; box-shadow: 0 4px 16px rgba(59,130,246,.3);
+}
+.btn-amber {
+  background: linear-gradient(135deg, var(--amber), #d97706);
+  color: #fff; box-shadow: 0 4px 16px rgba(245,158,11,.3);
+}
+.btn-ghost {
+  background: none; color: var(--slate); border: 1.5px solid var(--border);
+}
+.card {
+  background: #fff; border-radius: 16px; padding: 20px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.06);
+}
+.chip {
+  padding: 9px 10px; border-radius: 10px; border: 2px solid var(--border);
+  background: #fff; color: var(--slate); font-family: inherit;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all .15s;
+}
+.chip.active {
+  border-color: var(--blue); background: rgba(59,130,246,.1);
+  color: var(--blue); font-weight: 800;
+}
+.chip.active-amber {
+  border-color: var(--amber); background: rgba(245,158,11,.1);
+  color: #92400e; font-weight: 800;
+}
+.section-label {
+  font-size: 12px; font-weight: 700; color: var(--slate);
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;
+}
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: #1e293b; color: #fff; padding: 12px 24px; border-radius: 12px;
+  font-size: 14px; font-weight: 600; z-index: 9999;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ══════════════════════════════════════════════════
+   LANDING
+══════════════════════════════════════════════════ */
+#screen-landing {
+  background: #0c0f1a;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px 24px;
+  position: relative; overflow: hidden;
+}
+.landing-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(59,130,246,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+.landing-glow {
+  position: absolute; border-radius: 50%; filter: blur(48px); pointer-events: none;
+}
+.landing-content { position: relative; z-index: 1; text-align: center; max-width: 400px; width: 100%; }
+.landing-icon {
+  width: 80px; height: 80px; border-radius: 22px; margin: 0 auto 24px;
+  background: linear-gradient(135deg, var(--blue), var(--amber));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; box-shadow: 0 0 60px rgba(59,130,246,.35);
+}
+.landing-title {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 30px; color: #fff; letter-spacing: -1px;
+  margin-bottom: 8px; line-height: 1.15;
+}
+.landing-sub { font-size: 14px; color: #475569; line-height: 1.75; margin-bottom: 32px; }
+.landing-badge {
+  display: inline-block; background: rgba(245,158,11,.15);
+  border: 1px solid rgba(245,158,11,.3); color: #fbbf24;
+  font-size: 12px; padding: 4px 12px; border-radius: 20px; margin-bottom: 32px;
+}
+.landing-btns { display: flex; flex-direction: column; gap: 12px; }
+.landing-btn {
+  width: 100%; padding: 18px 24px; border-radius: 16px; border: none;
+  font-family: 'Gowun Dodum', sans-serif; font-size: 16px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; gap: 12px;
+  transition: transform .15s, box-shadow .15s;
+}
+.landing-btn:hover { transform: translateY(-2px); }
+.landing-btn-parent {
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  color: #fff; box-shadow: 0 6px 24px rgba(59,130,246,.35);
+}
+.landing-btn-child {
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  color: #fff; box-shadow: 0 6px 24px rgba(245,158,11,.35);
+}
+.landing-hint { font-size: 12px; color: #334155; margin-top: 20px; }
+
+/* ══════════════════════════════════════════════════
+   PARENT
+══════════════════════════════════════════════════ */
+#screen-parent { background: var(--bg); }
+.parent-header {
+  background: var(--navy); height: 58px; padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.parent-header-left { display: flex; align-items: center; gap: 10px; }
+.header-title { color: #fff; font-weight: 700; font-size: 16px; }
+.header-tag {
+  background: var(--blue); color: #fff;
+  font-size: 10px; font-weight: 800; padding: 2px 8px;
+  border-radius: 20px; letter-spacing: .5px;
+}
+.tabs {
+  background: #fff; border-bottom: 1px solid var(--border);
+  display: flex; padding: 0 20px;
+}
+.tab-btn {
+  padding: 13px 18px; border: none; background: none; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 500;
+  color: var(--slate); border-bottom: 2.5px solid transparent;
+  transition: all .15s;
+}
+.tab-btn.active { color: var(--blue); font-weight: 700; border-bottom-color: var(--blue); }
+.tab-content { display: none; padding: 20px 16px 80px; max-width: 640px; margin: 0 auto; }
+.tab-content.active { display: flex; flex-direction: column; gap: 16px; }
+
+/* 학년별 색상 */
+.grade-1 { --gc: #f97316; } .grade-2 { --gc: #22c55e; }
+.grade-3 { --gc: #3b82f6; } .grade-4 { --gc: #a855f7; }
+.grade-5 { --gc: #ec4899; } .grade-6 { --gc: #0ea5e9; }
+.grade-badge {
+  display: inline-flex; align-items: center;
+  background: rgba(var(--gc-rgb), .12); color: var(--gc);
+  font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px;
+  letter-spacing: .5px;
+}
+
+/* 기록 카드 */
+.record-card {
+  background: #fff; border-radius: 14px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.05);
+}
+.record-emoji {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.stat-card {
+  background: #fff; border-radius: 14px; padding: 16px 12px;
+  text-align: center; box-shadow: 0 1px 6px rgba(0,0,0,.06);
+}
+.stat-val { font-size: 22px; font-weight: 900; }
+.stat-label { font-size: 11px; color: var(--slate); margin-top: 2px; }
+
+/* 저장 버튼 */
+.save-btn {
+  width: 100%; padding: 18px; border-radius: 14px; border: none;
+  font-family: inherit; font-size: 17px; font-weight: 800;
+  cursor: pointer; transition: all .3s;
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  color: #fff; box-shadow: 0 4px 20px rgba(59,130,246,.3);
+}
+.save-btn.saved { background: var(--green); box-shadow: 0 4px 20px rgba(16,185,129,.3); }
+
+/* ══════════════════════════════════════════════════
+   CHILD  — 칠판/크레용 테마
+══════════════════════════════════════════════════ */
+#screen-child {
+  background: linear-gradient(160deg, #fff7ed 0%, #fef3c7 55%, #fde68a 100%);
+  font-family: 'Gaegu', cursive;
+}
+.child-header {
+  padding: 16px 20px 0; display: flex;
+  align-items: center; justify-content: space-between;
+}
+.stars-badge {
+  background: #fef3c7; border-radius: 24px; padding: 7px 16px;
+  font-size: 16px; font-weight: 700; color: #92400e;
+}
+.child-card {
+  background: #fff; border-radius: 28px; padding: 28px 24px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.08); margin: 0 16px;
+}
+
+/* 문제 풀기 */
+.problem-box {
+  font-family: 'Courier New', monospace;
+  display: inline-block; text-align: right;
+}
+.problem-num { font-size: 44px; font-weight: 900; color: #1e293b; display: block; }
+.problem-row { font-size: 44px; font-weight: 900; color: #1e293b; display: flex; justify-content: space-between; gap: 20px; }
+.problem-op  { color: #f59e0b; }
+.problem-line { border-top: 3px solid #1e293b; margin-top: 6px; padding-top: 10px; min-width: 140px; }
+.problem-horiz { font-size: 36px; font-weight: 900; color: #1e293b; line-height: 1.5; font-family: 'Courier New', monospace; }
+.ans-input {
+  width: 75%; padding: 16px; text-align: center;
+  font-size: 32px; font-weight: 900; font-family: 'Gaegu', cursive;
+  border-radius: 16px; border: 3px solid var(--border);
+  outline: none; background: #fafafa; margin-top: 20px;
+  transition: border-color .2s;
+}
+.ans-input:focus { border-color: var(--amber); }
+.ans-input.correct { border-color: var(--green); background: #f0fdf4; }
+.ans-input.wrong   { border-color: var(--red);   background: #fef2f2; }
+
+/* 진행 바 */
+.prog-bar-wrap { height: 10px; background: #fed7aa; border-radius: 99px; overflow: hidden; }
+.prog-bar      { height: 100%; background: linear-gradient(90deg,#f59e0b,#ef4444); border-radius: 99px; transition: width .35s ease; }
+
+/* 힌트 박스 */
+.hint-box {
+  background: #fefce8; border: 2px solid #fde68a; border-radius: 14px;
+  padding: 14px 16px; font-size: 15px; color: #78350f; line-height: 1.75;
+  margin-bottom: 12px;
+}
+
+/* 결과 화면 */
+.result-score { font-size: 56px; font-weight: 900; }
+.wrong-list { background: #fef2f2; border-radius: 16px; padding: 14px 16px; text-align: left; margin-top: 20px; }
+.wrong-item { font-size: 13px; color: #7f1d1d; padding: 4px 0; border-bottom: 1px solid #fee2e2; }
+.wrong-item:last-child { border-bottom: none; }
+
+/* 애니메이션 */
+@keyframes pop  { 0%{transform:scale(.4)} 65%{transform:scale(1.18)} 100%{transform:scale(1)} }
+@keyframes bounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.025)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+@keyframes spin   { to{transform:rotate(360deg)} }
+.anim-pop    { animation: pop .35s ease-out; }
+.anim-bounce { animation: bounce 1.8s ease-in-out infinite; }
+.anim-fadeup { animation: fadeUp .4s ease; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: LANDING
+══════════════════════════════════════════════════ -->
+<div id="screen-landing" class="screen active">
+  <div class="landing-grid"></div>
+  <div class="landing-glow" style="width:400px;height:400px;top:10%;left:20%;background:radial-gradient(circle,rgba(59,130,246,.18) 0%,transparent 70%)"></div>
+  <div class="landing-glow" style="width:280px;height:280px;bottom:15%;right:10%;background:radial-gradient(circle,rgba(245,158,11,.14) 0%,transparent 70%)"></div>
+
+  <div class="landing-content">
+    <div class="landing-icon">✏️</div>
+    <h1 class="landing-title">수학 문제지<br>생성기</h1>
+    <p class="landing-sub">2022 개정 교육과정 · 초등 1~6학년 전 단원<br>단원 Mix 출제 · AI 힌트 · 기기 간 실시간 동기화</p>
+    <div class="landing-badge" id="fb-status">🔄 Firebase 연결 중...</div>
+    <div class="landing-btns">
+      <button class="landing-btn landing-btn-parent" onclick="goScreen('parent')">
+        <span>👨‍👩‍👧</span>
+        <div style="text-align:left">
+          <div>부모 화면</div>
+          <div style="font-size:12px;font-weight:400;opacity:.8">문제 설정 · 기록 확인</div>
+        </div>
+      </button>
+      <button class="landing-btn landing-btn-child" onclick="goScreen('child')">
+        <span>🧒</span>
+        <div style="text-align:left">
+          <div>아이 화면</div>
+          <div style="font-size:12px;font-weight:400;opacity:.8">문제 풀기 · 별 모으기</div>
+        </div>
+      </button>
+    </div>
+    <p class="landing-hint">부모 화면에서 설정 저장 → 아이 화면에 자동 반영</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: PARENT
+══════════════════════════════════════════════════ -->
+<div id="screen-parent" class="screen">
+  <div class="parent-header">
+    <div class="parent-header-left">
+      <button class="btn btn-ghost" style="padding:6px 12px;font-size:18px;border:none;color:#94a3b8" onclick="goScreen('landing')">←</button>
+      <span class="header-title">부모 화면</span>
+      <span class="header-tag">PARENT</span>
+    </div>
+    <button class="btn btn-amber" style="padding:8px 14px;font-size:13px" onclick="goScreen('child')">아이 화면 →</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('settings')">⚙️ 문제 설정</button>
+    <button class="tab-btn" onclick="switchTab('records')">📊 학습 기록</button>
+  </div>
+
+  <!-- 설정 탭 -->
+  <div id="tab-settings" class="tab-content active">
+
+    <!-- Gemini 키 -->
+    <div class="card">
+      <div class="section-label">🤖 Gemini API 키</div>
+      <div style="font-size:12px;color:var(--slate);margin-bottom:8px">힌트·오답 분석 기능에 사용 (없어도 문제 생성 가능)</div>
+      <input type="password" id="gemini-key" placeholder="AIza..."
+        style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);font-family:inherit;font-size:14px;outline:none"
+        oninput="onGemKeyInput(this)"/>
+      <div id="gem-key-hint" style="font-size:12px;color:var(--slate);margin-top:6px">
+        없어도 됩니다 · <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--blue)">무료 발급 →</a>
+      </div>
+    </div>
+
+    <!-- 학년 선택 -->
+    <div class="card">
+      <div class="section-label">학년 선택</div>
+      <div style="font-size:12px;color:var(--slate);margin-bottom:10px">복수 선택 가능 — 여러 학년 Mix 출제</div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px" id="grade-chips"></div>
+    </div>
+
+    <!-- 단원 선택 -->
+    <div class="card">
+      <div class="section-label">단원 선택</div>
+      <div style="font-size:12px;color:var(--slate);margin-bottom:12px">복수 선택 → 섞어서 출제 (Mix 모드)</div>
+      <div id="unit-list"></div>
+      <div id="mix-badge" style="display:none;margin-top:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px;font-size:13px;color:#1d4ed8;font-weight:600">
+        🔀 <span id="mix-count"></span>개 단원 Mix 출제 모드
+      </div>
+    </div>
+
+    <!-- 난이도 -->
+    <div class="card">
+      <div class="section-label">난이도</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <button class="chip" id="diff-1" onclick="setDiff(1)">⭐ 쉬움</button>
+        <button class="chip active" id="diff-2" onclick="setDiff(2)">⭐⭐ 보통</button>
+        <button class="chip" id="diff-3" onclick="setDiff(3)">⭐⭐⭐ 어려움</button>
+      </div>
+    </div>
+
+    <!-- 형식 -->
+    <div class="card">
+      <div class="section-label">문제 형식</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="chip active" id="style-vertical" onclick="setStyle('vertical')">세로식 (구몬)</button>
+        <button class="chip" id="style-horizontal" onclick="setStyle('horizontal')">가로식</button>
+      </div>
+    </div>
+
+    <!-- 문제 수 -->
+    <div class="card">
+      <div class="section-label">문제 수: <span id="count-label">30</span>문제</div>
+      <input type="range" min="10" max="100" step="5" value="30" id="count-slider"
+        style="width:100%;accent-color:var(--blue)"
+        oninput="document.getElementById('count-label').textContent=this.value"/>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--slate);margin-top:4px">
+        <span>10문제</span><span>100문제</span>
+      </div>
+    </div>
+
+    <button class="save-btn" id="save-btn" onclick="saveConfig()">💾 설정 저장 → 아이 화면에 반영</button>
+  </div>
+
+  <!-- 기록 탭 -->
+  <div id="tab-records" class="tab-content">
+    <div id="records-empty" class="card" style="text-align:center;padding:48px 20px;color:var(--slate)">
+      <div style="font-size:48px;margin-bottom:12px">📭</div>
+      <div style="font-weight:700;font-size:16px">아직 학습 기록이 없어요</div>
+      <div style="font-size:13px;margin-top:6px">아이가 문제를 풀면 여기에 쌓여요</div>
+    </div>
+    <div id="records-content" style="display:none;display:flex;flex-direction:column;gap:14px">
+      <div class="stat-grid" id="stat-grid"></div>
+
+      <!-- Gemini 분석 -->
+      <div class="card" id="ai-analysis-box">
+        <div style="display:flex;align-items:center;margin-bottom:12px">
+          <span style="font-weight:800;font-size:15px">🤖 AI 학습 분석</span>
+          <button class="btn btn-primary" style="margin-left:auto;padding:7px 14px;font-size:12px" onclick="doAnalysis()">분석하기</button>
+        </div>
+        <div id="analysis-result" style="display:none"></div>
+      </div>
+
+      <div id="record-list"></div>
+      <button class="btn btn-ghost" style="width:100%;padding:14px;border-color:#fca5a5;color:var(--red)" onclick="clearRecords()">🗑️ 기록 전체 삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: CHILD
+══════════════════════════════════════════════════ -->
+<div id="screen-child" class="screen">
+
+  <!-- PHASE: LOADING -->
+  <div id="child-loading" style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+    <div style="text-align:center;color:#92400e">
+      <div style="font-size:48px;animation:spin 1s linear infinite">⏳</div>
+      <div style="font-size:18px;font-weight:700;margin-top:12px">문제 불러오는 중...</div>
+    </div>
+  </div>
+
+  <!-- PHASE: NO CONFIG -->
+  <div id="child-noconfig" style="display:none;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center">
+    <div>
+      <div style="font-size:72px;margin-bottom:16px">😴</div>
+      <div style="font-size:22px;font-weight:700;color:#92400e;margin-bottom:8px">아직 문제가 없어요</div>
+      <div style="font-size:16px;color:#b45309;margin-bottom:24px">부모님께 문제를 설정해달라고 해요!</div>
+      <button class="btn btn-ghost" onclick="goScreen('landing')">← 처음으로</button>
+    </div>
+  </div>
+
+  <!-- PHASE: READY -->
+  <div id="child-ready" style="display:none">
+    <div class="child-header">
+      <button class="btn btn-ghost" style="border:none;font-size:20px;color:#92400e;background:none;padding:4px 8px" onclick="goScreen('landing')">←</button>
+      <div class="stars-badge">⭐ <span id="ready-stars">0</span>개</div>
+    </div>
+    <div style="max-width:420px;margin:16px auto;padding:0 16px 80px">
+      <div class="child-card" style="text-align:center">
+        <div style="font-size:72px;margin-bottom:8px" id="ready-icon">📝</div>
+        <div style="font-size:24px;font-weight:700;color:#1e293b;margin-bottom:16px">오늘의 문제</div>
+        <div id="ready-mix-badge" style="display:none;background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1.5px solid #bfdbfe;border-radius:14px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#1d4ed8;font-weight:600"></div>
+        <div style="background:#fafafa;border-radius:16px;padding:16px 18px;margin-bottom:20px;text-align:left" id="ready-info"></div>
+        <button class="btn btn-amber anim-bounce" style="width:100%;padding:20px;font-size:22px;border-radius:18px;font-family:'Gaegu',cursive" onclick="startSolving()">🚀 시작!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE: SOLVING -->
+  <div id="child-solving" style="display:none">
+    <div style="max-width:420px;margin:0 auto;padding:16px 20px 80px">
+      <!-- 진행 -->
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#92400e;margin-bottom:5px;font-weight:700">
+          <span id="prog-text">1 / 20</span>
+          <span id="timer-text">⏱ 0분 0초</span>
+        </div>
+        <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+        <div style="font-size:11px;color:#b45309;margin-top:4px" id="unit-name-badge"></div>
+      </div>
+
+      <!-- 문제 카드 -->
+      <div class="child-card" id="problem-card" style="text-align:center;margin-bottom:14px;transition:box-shadow .25s">
+        <div id="feedback-emoji" style="font-size:40px;margin-bottom:8px;display:none"></div>
+        <div id="problem-display"></div>
+        <input class="ans-input" id="ans-input" type="text" inputmode="decimal" placeholder="정답"
+          onkeydown="if(event.key==='Enter')submitAnswer()"
+          oninput="onAnsInput()"/>
+      </div>
+
+      <!-- 힌트 -->
+      <div id="hint-area" style="margin-bottom:12px"></div>
+
+      <button class="btn btn-amber" id="submit-btn" style="width:100%;padding:18px;font-size:20px;border-radius:18px;font-family:'Gaegu',cursive" onclick="submitAnswer()">
+        확인 ✓
+      </button>
+    </div>
+  </div>
+
+  <!-- PHASE: RESULT -->
+  <div id="child-result" style="display:none">
+    <div style="max-width:420px;margin:0 auto;padding:24px 16px 80px">
+      <div class="child-card" style="text-align:center;margin-bottom:14px">
+        <div id="result-emoji" style="font-size:80px;margin-bottom:8px"></div>
+        <div id="result-msg" style="font-size:26px;font-weight:700;color:#1e293b;margin-bottom:4px"></div>
+        <div class="result-score" id="result-pct"></div>
+        <div id="result-sub" style="color:var(--slate);font-size:14px;margin-top:4px"></div>
+        <div id="result-stars" style="font-size:15px;color:var(--amber);font-weight:700;margin-top:8px"></div>
+        <div id="result-wrong" class="wrong-list" style="display:none"></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" style="flex:1;padding:16px;font-size:16px;font-family:'Gaegu',cursive" onclick="startSolving()">🔄 다시 풀기</button>
+        <button class="btn btn-ghost" style="flex:1;padding:16px;font-size:16px;font-family:'Gaegu',cursive" onclick="showChildPhase('ready')">🏠 홈으로</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  교육과정 단원 데이터
+// ═══════════════════════════════════════════════════════
+const UNITS = [
+  {id:"1-1-0",grade:1,sem:1,name:"9까지의 수",        ops:["+","-"],min:1,max:9,maxR:9},
+  {id:"1-1-1",grade:1,sem:1,name:"한 자리 덧셈",       ops:["+"],   min:1,max:9,maxR:9},
+  {id:"1-1-2",grade:1,sem:1,name:"한 자리 뺄셈",       ops:["-"],   min:2,max:9,maxR:9},
+  {id:"1-1-3",grade:1,sem:1,name:"50까지의 수",        ops:["+","-"],min:1,max:49,maxR:50},
+  {id:"1-2-0",grade:1,sem:2,name:"100까지의 수",       ops:["+","-"],min:10,max:90,maxR:99},
+  {id:"1-2-1",grade:1,sem:2,name:"받아올림 없는 덧셈", ops:["+"],   min:11,max:88,maxR:99,noCarry:true},
+  {id:"1-2-2",grade:1,sem:2,name:"받아내림 없는 뺄셈", ops:["-"],   min:20,max:99,maxR:99,noBorrow:true},
+  {id:"2-1-0",grade:2,sem:1,name:"받아올림 있는 덧셈", ops:["+"],   min:15,max:99,maxR:99,withCarry:true},
+  {id:"2-1-1",grade:2,sem:1,name:"받아내림 있는 뺄셈", ops:["-"],   min:20,max:99,maxR:99,withBorrow:true},
+  {id:"2-1-2",grade:2,sem:1,name:"세 자리 수 덧셈",   ops:["+"],   min:100,max:899,maxR:1999},
+  {id:"2-1-3",grade:2,sem:1,name:"세 자리 수 뺄셈",   ops:["-"],   min:200,max:999,maxR:999},
+  {id:"2-2-0",grade:2,sem:2,name:"곱셈구구 2~5단",    ops:["×"],   min:2,max:5,maxR:45},
+  {id:"2-2-1",grade:2,sem:2,name:"곱셈구구 6~9단",    ops:["×"],   min:6,max:9,maxR:81},
+  {id:"2-2-2",grade:2,sem:2,name:"곱셈구구 전체",     ops:["×"],   min:2,max:9,maxR:81},
+  {id:"3-1-0",grade:3,sem:1,name:"세 자리 덧셈 심화", ops:["+"],   min:100,max:999,maxR:1999},
+  {id:"3-1-1",grade:3,sem:1,name:"세 자리 뺄셈 심화", ops:["-"],   min:200,max:999,maxR:999},
+  {id:"3-1-2",grade:3,sem:1,name:"나눗셈 기초",       ops:["÷"],   min:2,max:9,maxR:81},
+  {id:"3-1-3",grade:3,sem:1,name:"두 자리×한 자리",   ops:["×"],   min:11,max:99,maxR:891},
+  {id:"3-2-0",grade:3,sem:2,name:"두 자리×두 자리",   ops:["×"],   min:11,max:99,maxR:9801},
+  {id:"3-2-1",grade:3,sem:2,name:"나머지 있는 나눗셈",ops:["÷r"],  min:2,max:9,maxR:81},
+  {id:"4-1-0",grade:4,sem:1,name:"만 단위 덧셈·뺄셈", ops:["+","-"],min:1000,max:9999,maxR:19998},
+  {id:"4-1-1",grade:4,sem:1,name:"세 자리×두 자리",   ops:["×"],   min:100,max:999,maxR:89991},
+  {id:"4-1-2",grade:4,sem:1,name:"두 자리 나눗셈",    ops:["÷"],   min:10,max:99,maxR:891},
+  {id:"4-2-0",grade:4,sem:2,name:"소수 덧셈·뺄셈",   ops:["+d","-d"],min:1,max:9,maxR:18},
+  {id:"4-2-1",grade:4,sem:2,name:"혼합 계산",         ops:["mix"], min:1,max:50,maxR:999},
+  {id:"5-1-0",grade:5,sem:1,name:"약수와 배수",       ops:["×"],   min:2,max:12,maxR:144},
+  {id:"5-1-1",grade:5,sem:1,name:"자연수 혼합 계산",  ops:["mix"], min:1,max:99,maxR:9999},
+  {id:"5-2-0",grade:5,sem:2,name:"분수의 곱셈",       ops:["×f"],  min:1,max:9,maxR:9},
+  {id:"5-2-1",grade:5,sem:2,name:"소수의 곱셈",       ops:["×d"],  min:1,max:99,maxR:999},
+  {id:"5-2-2",grade:5,sem:2,name:"비와 비율",         ops:["ratio"],min:1,max:20,maxR:20},
+  {id:"6-1-0",grade:6,sem:1,name:"분수의 나눗셈",     ops:["÷f"],  min:1,max:9,maxR:9},
+  {id:"6-1-1",grade:6,sem:1,name:"소수의 나눗셈",     ops:["÷d"],  min:1,max:99,maxR:99},
+  {id:"6-2-0",grade:6,sem:2,name:"비례식·비례배분",   ops:["ratio"],min:1,max:20,maxR:100},
+  {id:"6-2-1",grade:6,sem:2,name:"분수·소수 혼합",    ops:["+f","-f"],min:1,max:9,maxR:9},
+];
+
+const GRADE_COLORS = {1:"#f97316",2:"#22c55e",3:"#3b82f6",4:"#a855f7",5:"#ec4899",6:"#0ea5e9"};
+
+// ═══════════════════════════════════════════════════════
+//  문제 생성 엔진
+// ═══════════════════════════════════════════════════════
+function ri(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function gcd(a,b){ return b===0?a:gcd(b,a%b); }
+
+function makeProblem(unit, diff) {
+  const scale = diff===1?.5:diff===2?.75:1;
+  const hi = Math.max(unit.min, Math.floor(unit.max*scale));
+  const op = unit.ops[ri(0,unit.ops.length-1)];
+
+  if(op==="×"){
+    const a=ri(unit.min,hi),b=ri(unit.min,hi);
+    return {expr:a+" × "+b,a,b,op,ans:String(a*b)};
+  }
+  if(op==="÷"){
+    const b=ri(unit.min,hi),q=ri(2,9);
+    return {expr:(b*q)+" ÷ "+b,a:b*q,b,op,ans:String(q)};
+  }
+  if(op==="÷r"){
+    const b=ri(2,9),q=ri(1,9),r=ri(0,b-1);
+    return {expr:(b*q+r)+" ÷ "+b,a:b*q+r,b,op:"÷",ans:q+" … "+r};
+  }
+  if(op==="+d"||op==="-d"){
+    const a=(ri(1,99)/10).toFixed(1),b=(ri(1,99)/10).toFixed(1);
+    const sym=op==="+d"?"+":"-";
+    const ans=op==="+d"
+      ?(parseFloat(a)+parseFloat(b)).toFixed(1)
+      :(Math.abs(parseFloat(a)-parseFloat(b))).toFixed(1);
+    return {expr:a+" "+sym+" "+b,a:parseFloat(a),b:parseFloat(b),op:sym,ans};
+  }
+  if(op==="×d"){
+    const a=(ri(1,99)/10).toFixed(1),b=ri(2,9);
+    return {expr:a+" × "+b,a:parseFloat(a),b,op:"×",ans:(parseFloat(a)*b).toFixed(1)};
+  }
+  if(op==="÷d"){
+    const b=ri(2,9),q=(ri(1,99)/10).toFixed(1);
+    return {expr:(parseFloat(q)*b).toFixed(1)+" ÷ "+b,op:"÷",ans:q};
+  }
+  if(op==="×f"||op==="÷f"){
+    const n1=ri(1,unit.max),d1=ri(2,9),n2=ri(1,unit.max),d2=ri(2,9);
+    if(op==="×f"){
+      const an=n1*n2,ad=d1*d2,g=gcd(an,ad);
+      return {expr:n1+"/"+d1+" × "+n2+"/"+d2,op:"×",ans:ad===g?String(an/g):(an/g)+"/"+(ad/g)};
+    }
+    const an=n1*d2,ad=d1*n2,g=gcd(an,ad);
+    return {expr:n1+"/"+d1+" ÷ "+n2+"/"+d2,op:"÷",ans:ad===g?String(an/g):(an/g)+"/"+(ad/g)};
+  }
+  if(op==="+f"||op==="-f"){
+    const d=ri(2,9),n1=ri(1,d-1),n2=ri(1,op==="+f"?d-n1:n1);
+    const ansN=op==="+f"?n1+n2:n1-n2;
+    return {expr:n1+"/"+d+(op==="+f"?" + ":" - ")+n2+"/"+d,op:op==="+f"?"+":"-",ans:ansN+"/"+d};
+  }
+  if(op==="ratio"){
+    const a=ri(unit.min,hi),b=ri(unit.min,hi),g=gcd(a,b);
+    return {expr:a+" : "+b+" 를 간단히",op:":",ans:(a/g)+" : "+(b/g)};
+  }
+  if(op==="mix"){
+    const a=ri(1,30),b=ri(2,9),c=ri(1,10);
+    return {expr:a+" + "+b+" × "+c,op:"mix",ans:String(a+b*c)};
+  }
+  // 기본 +/-
+  let a=ri(unit.min,hi),b=ri(unit.min,hi);
+  if(op==="-"&&a<b){let t=a;a=b;b=t;}
+  const ans=op==="+"?a+b:a-b;
+  if(ans<0||ans>unit.maxR) return makeProblem(unit,diff);
+  return {expr:a+" "+op+" "+b,a,b,op,ans:String(ans)};
+}
+
+function makeProblems(unitIds, diff, count) {
+  const sel = UNITS.filter(u=>unitIds.includes(u.id));
+  if(!sel.length) return [];
+  return Array.from({length:count}, ()=>{
+    const u = sel[ri(0,sel.length-1)];
+    return {...makeProblem(u,diff), unitName:u.name};
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  상태
+// ═══════════════════════════════════════════════════════
+let STATE = {
+  selGrades: [1],
+  selUnits:  ["1-1-1"],
+  difficulty: 2,
+  style: "vertical",
+  count: 30,
+  gemKey: "",
+};
+let records = [];
+let problems = [], curIdx = 0, answers = [], elapsed = 0, timerInterval = null;
+let stars = parseInt(localStorage.getItem("stars")||"0");
+let childConfig = null;
+
+// ═══════════════════════════════════════════════════════
+//  화면 전환
+// ═══════════════════════════════════════════════════════
+function goScreen(name) {
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  const el = document.getElementById("screen-"+name);
+  el.classList.add("active");
+  if(name==="parent") initParent();
+  if(name==="child")  initChild();
+}
+
+// ═══════════════════════════════════════════════════════
+//  PARENT 초기화
+// ═══════════════════════════════════════════════════════
+function initParent() {
+  // Gemini 키 복원
+  STATE.gemKey = localStorage.getItem("gemini_key")||"";
+  document.getElementById("gemini-key").value = STATE.gemKey;
+  if(STATE.gemKey) document.getElementById("gem-key-hint").style.display="none";
+
+  // Firebase에서 설정 로드
+  waitCloud(()=>{
+    Cloud.get("config").then(cfg=>{
+      if(cfg){
+        STATE.selGrades  = cfg.grades  || [1];
+        STATE.selUnits   = cfg.unitIds || ["1-1-1"];
+        STATE.difficulty = cfg.difficulty || 2;
+        STATE.style      = cfg.style || "vertical";
+        STATE.count      = cfg.count || 30;
+      }
+      renderGradeChips();
+      renderUnitList();
+      renderDiff();
+      renderStyle();
+      document.getElementById("count-slider").value = STATE.count;
+      document.getElementById("count-label").textContent = STATE.count;
+    });
+
+    // 기록 구독
+    Cloud.listen("records", val=>{
+      records = val ? Object.values(val).sort((a,b)=>b.ts-a.ts) : [];
+      renderRecords();
+    });
+  });
+}
+
+function renderGradeChips() {
+  const wrap = document.getElementById("grade-chips");
+  wrap.innerHTML = "";
+  [1,2,3,4,5,6].forEach(g=>{
+    const btn = document.createElement("button");
+    btn.className = "chip" + (STATE.selGrades.includes(g)?" active":"");
+    btn.style.borderColor = STATE.selGrades.includes(g)?GRADE_COLORS[g]:"";
+    btn.style.color = STATE.selGrades.includes(g)?GRADE_COLORS[g]:"";
+    btn.style.background = STATE.selGrades.includes(g)?GRADE_COLORS[g]+"18":"";
+    btn.textContent = g+"학년";
+    btn.onclick = ()=>toggleGrade(g);
+    wrap.appendChild(btn);
+  });
+}
+
+function toggleGrade(g) {
+  if(STATE.selGrades.includes(g)){
+    if(STATE.selGrades.length===1){showToast("학년을 하나 이상 선택해주세요");return;}
+    STATE.selGrades = STATE.selGrades.filter(x=>x!==g);
+    STATE.selUnits  = STATE.selUnits.filter(id=>{
+      const u=UNITS.find(x=>x.id===id); return u&&STATE.selGrades.includes(u.grade);
+    });
+  } else {
+    STATE.selGrades.push(g);
+  }
+  renderGradeChips();
+  renderUnitList();
+}
+
+function renderUnitList() {
+  const wrap = document.getElementById("unit-list");
+  wrap.innerHTML = "";
+  STATE.selGrades.slice().sort((a,b)=>a-b).forEach(g=>{
+    const gradeUnits = UNITS.filter(u=>u.grade===g);
+    const bySem = {};
+    gradeUnits.forEach(u=>{ if(!bySem[u.sem]) bySem[u.sem]=[]; bySem[u.sem].push(u); });
+
+    const gradeWrap = document.createElement("div");
+    gradeWrap.style.marginBottom = "14px";
+
+    const gradeLabel = document.createElement("div");
+    gradeLabel.style.cssText = "font-size:12px;font-weight:800;margin-bottom:8px;letter-spacing:1px";
+    gradeLabel.style.color = GRADE_COLORS[g];
+    gradeLabel.innerHTML = '<span style="background:'+GRADE_COLORS[g]+'22;padding:2px 10px;border-radius:20px">'+g+'학년</span>';
+    gradeWrap.appendChild(gradeLabel);
+
+    Object.entries(bySem).forEach(([sem,units])=>{
+      const semLabel = document.createElement("div");
+      semLabel.style.cssText = "font-size:11px;color:var(--slate);margin-bottom:6px";
+      semLabel.textContent = sem+"학기";
+      gradeWrap.appendChild(semLabel);
+
+      const chipWrap = document.createElement("div");
+      chipWrap.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px";
+      units.forEach(u=>{
+        const btn = document.createElement("button");
+        const active = STATE.selUnits.includes(u.id);
+        btn.className = "chip"+(active?" active":"");
+        btn.style.fontSize = "12px";
+        btn.style.padding  = "7px 11px";
+        if(active){
+          btn.style.borderColor = GRADE_COLORS[g];
+          btn.style.color       = GRADE_COLORS[g];
+          btn.style.background  = GRADE_COLORS[g]+"18";
+        }
+        btn.textContent = u.name;
+        btn.onclick = ()=>toggleUnit(u.id, g);
+        chipWrap.appendChild(btn);
+      });
+      gradeWrap.appendChild(chipWrap);
+    });
+    wrap.appendChild(gradeWrap);
+  });
+
+  // Mix 배지
+  const mixBadge = document.getElementById("mix-badge");
+  if(STATE.selUnits.length>1){
+    mixBadge.style.display="block";
+    document.getElementById("mix-count").textContent=STATE.selUnits.length;
+  } else {
+    mixBadge.style.display="none";
+  }
+}
+
+function toggleUnit(id) {
+  if(STATE.selUnits.includes(id)){
+    if(STATE.selUnits.length===1){showToast("단원을 하나 이상 선택해주세요");return;}
+    STATE.selUnits = STATE.selUnits.filter(x=>x!==id);
+  } else {
+    STATE.selUnits.push(id);
+  }
+  renderUnitList();
+}
+
+function setDiff(d){
+  STATE.difficulty=d;
+  renderDiff();
+}
+function renderDiff(){
+  [1,2,3].forEach(d=>{
+    const el=document.getElementById("diff-"+d);
+    el.className="chip"+(STATE.difficulty===d?" active":"");
+  });
+}
+
+function setStyle(s){
+  STATE.style=s;
+  renderStyle();
+}
+function renderStyle(){
+  ["vertical","horizontal"].forEach(s=>{
+    const el=document.getElementById("style-"+s);
+    el.className="chip"+(STATE.style===s?" active":"");
+  });
+}
+
+function onGemKeyInput(el){
+  STATE.gemKey=el.value;
+  document.getElementById("gem-key-hint").style.display=el.value?"none":"block";
+}
+
+async function saveConfig(){
+  if(!STATE.selUnits.length){showToast("단원을 하나 이상 선택해주세요");return;}
+  STATE.count = parseInt(document.getElementById("count-slider").value);
+  localStorage.setItem("gemini_key", STATE.gemKey);
+  const btn = document.getElementById("save-btn");
+  btn.textContent="저장 중..."; btn.disabled=true;
+  try{
+    await Cloud.set("config",{
+      grades:    STATE.selGrades,
+      unitIds:   STATE.selUnits,
+      difficulty:STATE.difficulty,
+      style:     STATE.style,
+      count:     STATE.count,
+      ts:        Date.now(),
+    });
+    btn.textContent="✅ 아이 화면에 저장됨!";
+    btn.classList.add("saved");
+    setTimeout(()=>{
+      btn.textContent="💾 설정 저장 → 아이 화면에 반영";
+      btn.classList.remove("saved"); btn.disabled=false;
+    },2500);
+  }catch(e){
+    showToast("저장 실패: "+e.message);
+    btn.textContent="💾 설정 저장 → 아이 화면에 반영";
+    btn.disabled=false;
+  }
+}
+
+function switchTab(name){
+  document.querySelectorAll(".tab-btn").forEach((b,i)=>{
+    b.classList.toggle("active", ["settings","records"][i]===name);
+  });
+  document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+}
+
+function renderRecords(){
+  const empty   = document.getElementById("records-empty");
+  const content = document.getElementById("records-content");
+  const aiBox   = document.getElementById("ai-analysis-box");
+  if(!records.length){
+    empty.style.display="block"; content.style.display="none"; return;
+  }
+  empty.style.display="none"; content.style.display="flex";
+  aiBox.style.display = STATE.gemKey?"block":"none";
+
+  const totalC = records.reduce((s,r)=>s+r.correct,0);
+  const totalT = records.reduce((s,r)=>s+r.total,0);
+  const avgPct = totalT?Math.round(totalC/totalT*100):0;
+  const color  = avgPct>=80?"var(--green)":avgPct>=60?"var(--amber)":"var(--red)";
+
+  document.getElementById("stat-grid").innerHTML =
+    statCard(totalT+"문제","총 문제","var(--blue)")+
+    statCard(avgPct+"%","평균 정답률",color)+
+    statCard(records.length+"회","학습 횟수","#8b5cf6");
+
+  const list = document.getElementById("record-list");
+  list.innerHTML = "";
+  records.slice(0,20).forEach(r=>{
+    const pct=Math.round(r.correct/r.total*100);
+    const em=pct>=80?"🌟":pct>=60?"👍":"💪";
+    const bg=pct>=80?"#dcfce7":pct>=60?"#fef9c3":"#fee2e2";
+    const fc=pct>=80?"var(--green)":pct>=60?"var(--amber)":"var(--red)";
+    const div=document.createElement("div");
+    div.className="record-card";
+    div.innerHTML=
+      '<div class="record-emoji" style="background:'+bg+'">'+em+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+
+          (r.unitNames?r.unitNames.join(" · "):"혼합")+
+        '</div>'+
+        '<div style="font-size:12px;color:var(--slate)">'+r.date+' · '+r.elapsed+'</div>'+
+      '</div>'+
+      '<div style="text-align:right;flex-shrink:0">'+
+        '<div style="font-size:18px;font-weight:900;color:'+fc+'">'+r.correct+'/'+r.total+'</div>'+
+        '<div style="font-size:11px;color:var(--slate)">'+pct+'%</div>'+
+      '</div>';
+    list.appendChild(div);
+  });
+}
+
+function statCard(val,label,color){
+  return '<div class="stat-card"><div class="stat-val" style="color:'+color+'">'+val+'</div><div class="stat-label">'+label+'</div></div>';
+}
+
+async function doAnalysis(){
+  if(!STATE.gemKey||!records.length) return;
+  const btn=document.querySelector("#ai-analysis-box .btn");
+  btn.textContent="분석 중..."; btn.disabled=true;
+  const res=document.getElementById("analysis-result");
+  res.style.display="none";
+  try{
+    const summary=records.slice(0,20).map(r=>
+      r.date+": "+(r.unitNames||["혼합"]).join("·")+" — "+r.correct+"/"+r.total+"문제, 오답: "+(r.wrongExprs||[]).slice(0,4).join(", ")
+    ).join("\n");
+    const prompt="초등학생 수학 학습 기록입니다:\n\n"+summary+"\n\n한국어로 다음을 분석해주세요:\n1. 잘하는 부분\n2. 오답이 집중된 유형과 원인\n3. 다음 학습 추천\n4. 부모님께 한마디\n\n친절하고 구체적으로, 3~4문단으로 작성해주세요.";
+    const text = await callGemini(STATE.gemKey, prompt);
+    res.style.cssText="display:block;background:#f8fafc;border-radius:12px;padding:16px;font-size:14px;line-height:1.85;color:#334155;border-left:3px solid var(--blue);white-space:pre-wrap";
+    res.textContent=text;
+  }catch(e){ res.style.display="block"; res.textContent="⚠️ "+e.message; }
+  btn.textContent="분석하기"; btn.disabled=false;
+}
+
+function clearRecords(){
+  if(!confirm("기록을 모두 삭제할까요?")) return;
+  Cloud.set("records",null).then(()=>{records=[];renderRecords();});
+}
+
+// ═══════════════════════════════════════════════════════
+//  CHILD 초기화
+// ═══════════════════════════════════════════════════════
+function initChild(){
+  showChildPhase("loading");
+  waitCloud(()=>{
+    Cloud.listen("config", cfg=>{
+      childConfig = cfg;
+      if(!cfg){ showChildPhase("noconfig"); return; }
+      showChildPhase("ready");
+      renderReady();
+    });
+    Cloud.get("config").then(cfg=>{
+      if(cfg){ childConfig=cfg; showChildPhase("ready"); renderReady(); }
+      else showChildPhase("noconfig");
+    });
+  });
+}
+
+function showChildPhase(phase){
+  ["loading","noconfig","ready","solving","result"].forEach(p=>{
+    const el=document.getElementById("child-"+p);
+    if(el) el.style.display = p===phase?(p==="noconfig"?"flex":"block"):"none";
+  });
+}
+
+function renderReady(){
+  if(!childConfig) return;
+  document.getElementById("ready-stars").textContent=stars;
+  const unitNames=[...new Set(
+    UNITS.filter(u=>childConfig.unitIds?.includes(u.id)).map(u=>u.name)
+  )];
+  const isMix = unitNames.length>1;
+  document.getElementById("ready-icon").textContent = isMix?"🔀":"📝";
+
+  const mixBadge=document.getElementById("ready-mix-badge");
+  if(isMix){
+    mixBadge.style.display="block";
+    mixBadge.textContent="🔀 Mix 모드 — "+unitNames.length+"개 단원 혼합 출제";
+  } else {
+    mixBadge.style.display="none";
+  }
+
+  const info=document.getElementById("ready-info");
+  const shown=unitNames.slice(0,4);
+  let rows=shown.map(n=>'<div style="font-size:13px;color:#475569;padding:4px 0;border-bottom:1px solid #f1f5f9">'+n+'</div>').join("");
+  if(unitNames.length>4) rows+='<div style="font-size:12px;color:var(--slate);padding:4px 0">+ '+(unitNames.length-4)+'개 더...</div>';
+  info.innerHTML=rows+
+    '<div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'+
+    '<span style="font-size:13px;color:var(--slate)">문제 수</span>'+
+    '<span style="font-size:13px;font-weight:700;color:#1e293b">'+childConfig.count+'문제</span></div>'+
+    '<div style="display:flex;justify-content:space-between;margin-top:6px">'+
+    '<span style="font-size:13px;color:var(--slate)">난이도</span>'+
+    '<span style="font-size:13px;font-weight:700;color:#1e293b">'+["","⭐ 쉬움","⭐⭐ 보통","⭐⭐⭐ 어려움"][childConfig.difficulty||2]+'</span></div>';
+}
+
+// ═══════════════════════════════════════════════════════
+//  문제 풀기
+// ═══════════════════════════════════════════════════════
+function startSolving(){
+  if(!childConfig?.unitIds?.length) return;
+  problems = makeProblems(childConfig.unitIds, childConfig.difficulty||2, childConfig.count||20);
+  answers  = [];
+  curIdx   = 0;
+  elapsed  = 0;
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    elapsed++;
+    document.getElementById("timer-text").textContent="⏱ "+Math.floor(elapsed/60)+"분 "+elapsed%60+"초";
+  },1000);
+  showChildPhase("solving");
+  renderProblem();
+  setTimeout(()=>document.getElementById("ans-input").focus(),100);
+}
+
+function renderProblem(){
+  const p=problems[curIdx];
+  const pct=Math.round(curIdx/problems.length*100);
+  document.getElementById("prog-text").textContent=(curIdx+1)+" / "+problems.length;
+  document.getElementById("prog-bar").style.width=pct+"%";
+  document.getElementById("unit-name-badge").textContent=p.unitName;
+
+  const card=document.getElementById("problem-card");
+  card.style.boxShadow="0 8px 40px rgba(0,0,0,.08)";
+  document.getElementById("feedback-emoji").style.display="none";
+
+  const isVert=childConfig.style==="vertical";
+  const disp=document.getElementById("problem-display");
+
+  if(isVert && p.a!==undefined && p.b!==undefined && p.op!=="mix" && p.op!==":"){
+    disp.innerHTML=
+      '<div class="problem-box">'+
+        '<span class="problem-num">'+p.a+'</span>'+
+        '<div class="problem-row"><span class="problem-op">'+p.op+'</span><span>'+p.b+'</span></div>'+
+        '<div class="problem-line"></div>'+
+      '</div>';
+  } else {
+    const tokens=p.expr.split(" ");
+    const colored=tokens.map(t=>
+      ["×","÷","+","-",":"].includes(t)
+        ?'<span style="color:#f59e0b">'+t+'</span>'
+        :t
+    ).join(" ");
+    disp.innerHTML='<div class="problem-horiz">'+colored+' ＝</div>';
+  }
+
+  const input=document.getElementById("ans-input");
+  input.value=""; input.className="ans-input"; input.disabled=false;
+  document.getElementById("hint-area").innerHTML="";
+}
+
+function onAnsInput(){}
+
+function submitAnswer(){
+  const p=problems[curIdx];
+  const input=document.getElementById("ans-input");
+  const val=input.value.trim();
+  if(!val||input.disabled) return;
+
+  const ok = String(p.ans).trim()===val ||
+             parseFloat(p.ans)===parseFloat(val);
+
+  // 피드백
+  input.disabled=true;
+  input.classList.add(ok?"correct":"wrong");
+  const fb=document.getElementById("feedback-emoji");
+  fb.textContent=ok?"🎉":"😅"; fb.style.display="block";
+  fb.classList.add("anim-pop");
+  const card=document.getElementById("problem-card");
+  card.style.boxShadow=ok
+    ?"0 0 0 3px var(--green),0 8px 40px rgba(16,185,129,.2)"
+    :"0 0 0 3px var(--red),0 8px 40px rgba(239,68,68,.15)";
+
+  answers.push({val,ok});
+
+  setTimeout(()=>{
+    fb.classList.remove("anim-pop");
+    if(curIdx+1>=problems.length){
+      finishSolving();
+    } else {
+      curIdx++;
+      renderProblem();
+      setTimeout(()=>document.getElementById("ans-input").focus(),60);
+    }
+  },600);
+}
+
+async function getHint(){
+  const gemKey=localStorage.getItem("gemini_key")||"";
+  if(!gemKey) return;
+  const area=document.getElementById("hint-area");
+  area.innerHTML='<div class="hint-box">힌트 가져오는 중... 🤔</div>';
+  const p=problems[curIdx];
+  try{
+    const prompt="초등학생이 \""+p.expr+" = ?\" 문제를 풀고 있어요. 답을 알려주지 말고 생각할 수 있게 힌트만 1~2문장으로 친절하게 주세요.";
+    const h=await callGemini(gemKey,prompt);
+    area.innerHTML='<div class="hint-box">💡 '+h+'</div>';
+  }catch(e){
+    area.innerHTML='<div class="hint-box">힌트를 불러오지 못했어요 😅</div>';
+  }
+}
+
+function finishSolving(){
+  clearInterval(timerInterval);
+  const correct=answers.filter(a=>a.ok).length;
+  const pct=Math.round(correct/problems.length*100);
+  const wrongList=problems.filter((_,i)=>!answers[i]?.ok);
+
+  // 기록 저장
+  const record={
+    date:new Date().toLocaleDateString("ko-KR"),
+    correct,total:problems.length,
+    elapsed:Math.floor(elapsed/60)+"분 "+elapsed%60+"초",
+    ts:Date.now(),
+    unitNames:[...new Set(problems.map(p=>p.unitName))],
+    wrongExprs:wrongList.map(p=>p.expr),
+  };
+  Cloud.get("records").then(prev=>{
+    const obj=prev||{};
+    obj[Date.now()]=record;
+    Cloud.set("records",obj);
+  });
+
+  // 별 지급
+  const earned=Math.floor(correct/5);
+  stars+=earned; localStorage.setItem("stars",stars);
+
+  // 결과 화면
+  showChildPhase("result");
+  document.getElementById("result-emoji").textContent=pct>=90?"🏆":pct>=70?"🌟":pct>=50?"💪":"📚";
+  document.getElementById("result-emoji").classList.add("anim-pop");
+  document.getElementById("result-msg").textContent=pct>=90?"완벽해요!":pct>=70?"잘했어요!":pct>=50?"조금 더!":"다시 도전!";
+  const scoreEl=document.getElementById("result-pct");
+  scoreEl.textContent=pct+"%";
+  scoreEl.style.color=pct>=80?"var(--green)":pct>=60?"var(--amber)":"var(--red)";
+  document.getElementById("result-sub").textContent=correct+"문제 정답 / "+problems.length+"문제 · "+Math.floor(elapsed/60)+"분 "+elapsed%60+"초";
+  document.getElementById("result-stars").textContent="+"+earned+"⭐ 획득 (누적 "+stars+"개)";
+
+  if(wrongList.length){
+    const wl=document.getElementById("result-wrong");
+    wl.style.display="block";
+    wl.innerHTML='<div style="font-weight:800;color:#991b1b;font-size:13px;margin-bottom:8px">❌ 틀린 문제 ('+wrongList.length+'개)</div>';
+    wrongList.slice(0,6).forEach((w,i)=>{
+      const d=document.createElement("div");
+      d.className="wrong-item";
+      d.innerHTML=w.expr+' ＝ <strong>'+w.ans+'</strong>'+(answers[problems.indexOf(w)]?'<span style="color:var(--slate);font-size:12px;margin-left:6px">(내 답: '+answers[problems.indexOf(w)].val+')</span>':"");
+      wl.appendChild(d);
+    });
+    if(wrongList.length>6){
+      const more=document.createElement("div");
+      more.style.cssText="font-size:12px;color:var(--slate);padding-top:4px";
+      more.textContent="+"+( wrongList.length-6)+"개 더...";
+      wl.appendChild(more);
+    }
+  } else {
+    document.getElementById("result-wrong").style.display="none";
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  Gemini API
+// ═══════════════════════════════════════════════════════
+async function callGemini(apiKey, prompt){
+  const r=await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+apiKey,
+    {method:"POST",headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})}
+  );
+  const d=await r.json();
+  if(d.error) throw new Error(d.error.message);
+  return d.candidates?.[0]?.content?.parts?.[0]?.text||"";
+}
+
+// ═══════════════════════════════════════════════════════
+//  토스트
+// ═══════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg){
+  const el=document.getElementById("toast");
+  el.textContent=msg; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove("show"),2800);
+}
+
+// ═══════════════════════════════════════════════════════
+//  Firebase 준비 대기
+// ═══════════════════════════════════════════════════════
+function waitCloud(cb){
+  if(window._firebaseReady) cb();
+  else document.addEventListener("firebase-ready",cb,{once:true});
+}
+
+// ═══════════════════════════════════════════════════════
+//  힌트 버튼 (아이 화면 solving에서 렌더링 후 호출)
+// ═══════════════════════════════════════════════════════
+// solving 화면에 힌트 버튼 동적 주입
+function renderHintBtn(){
+  const gemKey=localStorage.getItem("gemini_key")||"";
+  const area=document.getElementById("hint-area");
+  if(!gemKey||area.innerHTML) return;
+  area.innerHTML='<button class="btn" style="width:100%;padding:11px;border-radius:14px;background:#fefce8;border:2px solid #fde68a;color:#92400e;font-size:14px;font-weight:700;font-family:\'Gaegu\',cursive;margin-bottom:0" onclick="getHint()">💡 힌트 받기</button>';
+}
+
+// renderProblem 호출 후 힌트 버튼 주입
+const _origRenderProblem = renderProblem;
+renderProblem = function(){
+  _origRenderProblem();
+  setTimeout(renderHintBtn, 0);
+};
+
+// ═══════════════════════════════════════════════════════
+//  Firebase 연결 상태 표시
+// ═══════════════════════════════════════════════════════
+waitCloud(()=>{
+  const badge=document.getElementById("fb-status");
+  if(badge) { badge.textContent="✅ Firebase 연결됨"; badge.style.background="rgba(16,185,129,.15)"; badge.style.borderColor="rgba(16,185,129,.3)"; badge.style.color="#10b981"; }
+});
+</script>
+</body>
+</html>
