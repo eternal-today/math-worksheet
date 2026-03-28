@@ -1023,7 +1023,7 @@ async function testAndSaveGemini() {
   msgEl.style.display = "none";
 
   try {
-    // 가장 가벼운 프롬프트로 통신 테스트 시도
+    // 가장 가벼운 프롬프트로 통신 테스트 시도 (수정된 1.5-flash 모델 적용)
     await callGemini(keyInput, "1+1은? 숫자로만 대답해줘.");
     
     // 성공 메시지 출력
@@ -1433,8 +1433,9 @@ function finishSolving() {
 //  Gemini + 공통
 // ═══════════════════════════════════════════════════════
 async function callGemini(apiKey, prompt) {
+  // 수정사항: 가장 안정적인 1.5-flash 모델로 변경
   const r = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+apiKey,
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key="+apiKey,
     { method:"POST", headers:{"Content-Type":"application/json"},
       body:JSON.stringify({contents:[{parts:[{text:prompt}]}]}) }
   );
