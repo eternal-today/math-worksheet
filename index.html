@@ -129,10 +129,12 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
 ══════════════════════════════════════════════════ */
 #screen-landing {
   background: #0c0f1a;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
   padding: 32px 24px;
   position: relative; overflow: hidden;
+}
+#screen-landing.active {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
 }
 .landing-grid {
   position: absolute; inset: 0;
@@ -444,7 +446,7 @@ body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--b
       <div style="font-weight:700;font-size:16px">아직 학습 기록이 없어요</div>
       <div style="font-size:13px;margin-top:6px">아이가 문제를 풀면 여기에 쌓여요</div>
     </div>
-    <div id="records-content" style="display:none;display:flex;flex-direction:column;gap:14px">
+    <div id="records-content" style="display:none;flex-direction:column;gap:14px">
       <div class="stat-grid" id="stat-grid"></div>
 
       <!-- Gemini 분석 -->
