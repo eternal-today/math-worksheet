@@ -4,38 +4,53 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>수학 문제지 생성기</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Gaegu:wght@400;700&family=Black+Han+Sans&display=swap" rel="stylesheet"/>
+<!-- Pretendard 폰트 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
 
-<!-- Firebase CDN -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
-
-  // ═══════════════════════════════════════════════════
-  //  🔥 Firebase 설정값
-  // ═══════════════════════════════════════════════════
-  const firebaseConfig = {
-    apiKey: "AIzaSyATYzOPx0Z0iCmsU7btvTpkvKs_1H9s7VI",
-    authDomain: "woorim-math-worksheet.firebaseapp.com",
-    databaseURL: "https://woorim-math-worksheet-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "woorim-math-worksheet",
-    storageBucket: "woorim-math-worksheet.firebasestorage.app",
-    messagingSenderId: "620330724565",
-    appId: "1:620330724565:web:768744704ac4b1546d865c"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
-
-  // 전역 Cloud 객체로 노출
-  window.Cloud = {
-    set: (path, val) => set(ref(db, path), val),
-    get: (path)      => get(ref(db, path)).then(s => s.exists() ? s.val() : null),
-    listen: (path, cb) => onValue(ref(db, path), s => cb(s.exists() ? s.val() : null)),
-  };
-  window._firebaseReady = true;
-  document.dispatchEvent(new Event("firebase-ready"));
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+// SDK 로드 완료 후 안전하게 초기화
+function initFirebase() {
+  try {
+    const firebaseConfig = {
+      apiKey: "AIzaSyATYzOPx0Z0iCmsU7btvTpkvKs_1H9s7VI",
+      authDomain: "woorim-math-worksheet.firebaseapp.com",
+      databaseURL: "https://woorim-math-worksheet-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "woorim-math-worksheet",
+      storageBucket: "woorim-math-worksheet.firebasestorage.app",
+      messagingSenderId: "620330724565",
+      appId: "1:620330724565:web:768744704ac4b1546d865c"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const _rtdb = firebase.database();
+    window.Cloud = {
+      set:    (path, val) => _rtdb.ref(path).set(val),
+      get:    (path)      => _rtdb.ref(path).get().then(s => s.exists() ? s.val() : null),
+      listen: (path, cb)  => _rtdb.ref(path).on("value", s => cb(s.exists() ? s.val() : null)),
+    };
+    window._firebaseReady = true;
+    document.dispatchEvent(new Event("firebase-ready"));
+    console.log("✅ Firebase 초기화 완료");
+  } catch(e) {
+    console.error("Firebase 초기화 실패:", e);
+    // Firebase 없이도 localStorage fallback으로 동작
+    window.Cloud = {
+      set:    (path, val) => { try { localStorage.setItem(path, JSON.stringify(val)); } catch{} return Promise.resolve(); },
+      get:    (path)      => Promise.resolve((() => { try { const v=localStorage.getItem(path); return v?JSON.parse(v):null; } catch{ return null; } })()),
+      listen: (path, cb)  => { try { const v=localStorage.getItem(path); cb(v?JSON.parse(v):null); } catch{ cb(null); } },
+    };
+    window._firebaseReady = true;
+    document.dispatchEvent(new Event("firebase-ready"));
+  }
+}
+// DOM 파싱 완료 후 실행 보장
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initFirebase);
+} else {
+  initFirebase();
+}
 </script>
 
 <style>
@@ -53,7 +68,7 @@
   --border: #e2e8f0;
   --bg:     #f1f5f9;
 }
-body { font-family: 'Gowun Dodum', sans-serif; background: var(--bg); min-height: 100vh; }
+body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg); min-height: 100vh; }
 
 /* ── 화면 전환 ───────────────────────────────────── */
 .screen { display: none; min-height: 100vh; }
@@ -63,7 +78,7 @@ body { font-family: 'Gowun Dodum', sans-serif; background: var(--bg); min-height
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 12px 20px; border-radius: 12px; border: none;
-  font-family: inherit; font-size: 14px; font-weight: 700;
+  font-family: 'Pretendard', sans-serif; font-size: 14px; font-weight: 700;
   cursor: pointer; transition: transform .12s, box-shadow .12s;
 }
 .btn:active { transform: scale(.97); }
@@ -137,9 +152,10 @@ body { font-family: 'Gowun Dodum', sans-serif; background: var(--bg); min-height
   font-size: 40px; box-shadow: 0 0 60px rgba(59,130,246,.35);
 }
 .landing-title {
-  font-family: 'Black Han Sans', sans-serif;
-  font-size: 30px; color: #fff; letter-spacing: -1px;
-  margin-bottom: 8px; line-height: 1.15;
+  font-family: 'Pretendard', sans-serif;
+  font-size: 28px; color: #fff; letter-spacing: -0.5px;
+  font-weight: 700;
+  margin-bottom: 8px; line-height: 1.2;
 }
 .landing-sub { font-size: 14px; color: #475569; line-height: 1.75; margin-bottom: 32px; }
 .landing-badge {
@@ -150,7 +166,7 @@ body { font-family: 'Gowun Dodum', sans-serif; background: var(--bg); min-height
 .landing-btns { display: flex; flex-direction: column; gap: 12px; }
 .landing-btn {
   width: 100%; padding: 18px 24px; border-radius: 16px; border: none;
-  font-family: 'Gowun Dodum', sans-serif; font-size: 16px; font-weight: 700;
+  font-family: 'Pretendard', sans-serif; font-size: 16px; font-weight: 700;
   cursor: pointer; display: flex; align-items: center; gap: 12px;
   transition: transform .15s, box-shadow .15s;
 }
@@ -240,7 +256,7 @@ body { font-family: 'Gowun Dodum', sans-serif; background: var(--bg); min-height
 ══════════════════════════════════════════════════ */
 #screen-child {
   background: linear-gradient(160deg, #fff7ed 0%, #fef3c7 55%, #fde68a 100%);
-  font-family: 'Gaegu', cursive;
+  font-family: 'Pretendard', sans-serif;
 }
 .child-header {
   padding: 16px 20px 0; display: flex;
@@ -267,7 +283,7 @@ body { font-family: 'Gowun Dodum', sans-serif; background: var(--bg); min-height
 .problem-horiz { font-size: 36px; font-weight: 900; color: #1e293b; line-height: 1.5; font-family: 'Courier New', monospace; }
 .ans-input {
   width: 75%; padding: 16px; text-align: center;
-  font-size: 32px; font-weight: 900; font-family: 'Gaegu', cursive;
+  font-size: 32px; font-weight: 900; font-family: 'Pretendard', sans-serif;
   border-radius: 16px; border: 3px solid var(--border);
   outline: none; background: #fafafa; margin-top: 20px;
   transition: border-color .2s;
@@ -481,7 +497,7 @@ body { font-family: 'Gowun Dodum', sans-serif; background: var(--bg); min-height
         <div style="font-size:24px;font-weight:700;color:#1e293b;margin-bottom:16px">오늘의 문제</div>
         <div id="ready-mix-badge" style="display:none;background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1.5px solid #bfdbfe;border-radius:14px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#1d4ed8;font-weight:600"></div>
         <div style="background:#fafafa;border-radius:16px;padding:16px 18px;margin-bottom:20px;text-align:left" id="ready-info"></div>
-        <button class="btn btn-amber anim-bounce" style="width:100%;padding:20px;font-size:22px;border-radius:18px;font-family:'Gaegu',cursive" onclick="startSolving()">🚀 시작!</button>
+        <button class="btn btn-amber anim-bounce" style="width:100%;padding:20px;font-size:22px;border-radius:18px;font-family:'Pretendard',sans-serif" onclick="startSolving()">🚀 시작!</button>
       </div>
     </div>
   </div>
@@ -511,7 +527,7 @@ body { font-family: 'Gowun Dodum', sans-serif; background: var(--bg); min-height
       <!-- 힌트 -->
       <div id="hint-area" style="margin-bottom:12px"></div>
 
-      <button class="btn btn-amber" id="submit-btn" style="width:100%;padding:18px;font-size:20px;border-radius:18px;font-family:'Gaegu',cursive" onclick="submitAnswer()">
+      <button class="btn btn-amber" id="submit-btn" style="width:100%;padding:18px;font-size:20px;border-radius:18px;font-family:'Pretendard',sans-serif" onclick="submitAnswer()">
         확인 ✓
       </button>
     </div>
@@ -529,8 +545,8 @@ body { font-family: 'Gowun Dodum', sans-serif; background: var(--bg); min-height
         <div id="result-wrong" class="wrong-list" style="display:none"></div>
       </div>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-primary" style="flex:1;padding:16px;font-size:16px;font-family:'Gaegu',cursive" onclick="startSolving()">🔄 다시 풀기</button>
-        <button class="btn btn-ghost" style="flex:1;padding:16px;font-size:16px;font-family:'Gaegu',cursive" onclick="showChildPhase('ready')">🏠 홈으로</button>
+        <button class="btn btn-primary" style="flex:1;padding:16px;font-size:16px;font-family:'Pretendard',sans-serif" onclick="startSolving()">🔄 다시 풀기</button>
+        <button class="btn btn-ghost" style="flex:1;padding:16px;font-size:16px;font-family:'Pretendard',sans-serif" onclick="showChildPhase('ready')">🏠 홈으로</button>
       </div>
     </div>
   </div>
@@ -1199,8 +1215,8 @@ function showToast(msg){
 //  Firebase 준비 대기
 // ═══════════════════════════════════════════════════════
 function waitCloud(cb){
-  if(window._firebaseReady) cb();
-  else document.addEventListener("firebase-ready",cb,{once:true});
+  if(window._firebaseReady && window.Cloud) { cb(); return; }
+  document.addEventListener("firebase-ready", cb, {once:true});
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1211,7 +1227,7 @@ function renderHintBtn(){
   const gemKey=localStorage.getItem("gemini_key")||"";
   const area=document.getElementById("hint-area");
   if(!gemKey||area.innerHTML) return;
-  area.innerHTML='<button class="btn" style="width:100%;padding:11px;border-radius:14px;background:#fefce8;border:2px solid #fde68a;color:#92400e;font-size:14px;font-weight:700;font-family:\'Gaegu\',cursive;margin-bottom:0" onclick="getHint()">💡 힌트 받기</button>';
+  area.innerHTML='<button class="btn" style="width:100%;padding:11px;border-radius:14px;background:#fefce8;border:2px solid #fde68a;color:#92400e;font-size:14px;font-weight:700;font-family:\'Pretendard\',sans-serif;margin-bottom:0" onclick="getHint()">💡 힌트 받기</button>';
 }
 
 // renderProblem 호출 후 힌트 버튼 주입
@@ -1226,7 +1242,18 @@ renderProblem = function(){
 // ═══════════════════════════════════════════════════════
 waitCloud(()=>{
   const badge=document.getElementById("fb-status");
-  if(badge) { badge.textContent="✅ Firebase 연결됨"; badge.style.background="rgba(16,185,129,.15)"; badge.style.borderColor="rgba(16,185,129,.3)"; badge.style.color="#10b981"; }
+  if(!badge) return;
+  if(window._firebaseReady && firebase && firebase.apps && firebase.apps.length){
+    badge.textContent="✅ Firebase 연결됨";
+    badge.style.background="rgba(16,185,129,.15)";
+    badge.style.borderColor="rgba(16,185,129,.3)";
+    badge.style.color="#10b981";
+  } else {
+    badge.textContent="⚠️ 오프라인 모드";
+    badge.style.background="rgba(245,158,11,.15)";
+    badge.style.borderColor="rgba(245,158,11,.3)";
+    badge.style.color="#f59e0b";
+  }
 });
 </script>
 </body>
